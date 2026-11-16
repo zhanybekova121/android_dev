@@ -1,3 +1,5 @@
+import "package:android_dev/screens/content/comment_widget.dart";
+import "package:android_dev/screens/home_screen/models/comment_model.dart";
 import "package:android_dev/screens/home_screen/models/post_model.dart";
 import "package:flutter/material.dart";
 
@@ -13,16 +15,81 @@ class _PostWidgetState extends State<PostWidget> {
   final bool isLiked = false; 
  // This should ideally be managed by state management
 
- void openBottomSheet() {
+  final _commentController = TextEditingController();
+
+  @override
+  void dispose() {
+    _commentController.dispose();
+    super.dispose();
+  }
+
+  void openBottomSheet() {
+    final post = widget.post;
+    if (post == null) return;
+
     showModalBottomSheet(
       context: context,
-      builder: (BuildContext context) {
-        return Container(
-          height: 200,
-          color: Colors.white,
-          child: Center(
-            child: Text('Bottom Sheet Content'),
-          ),
+      isScrollControlled: true,
+      builder: (sheetContext) {
+        return StatefulBuilder(
+          builder: (sheetContext, setSheetState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(sheetContext).viewInsets.bottom,
+              ),
+              child: SizedBox(
+                height: 400,
+                child: Column(
+                  children: [
+                    const Padding(
+                      padding: EdgeInsets.all(12),
+                      child: Text(
+                        'Comments',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                    Expanded(
+                      child: post.comments.isEmpty
+                          ? const Center(child: Text('No comments yet'))
+                          : ListView.builder(
+                              itemCount: post.comments.length,
+                              itemBuilder: (_, i) =>
+                                  CommentWidget(comment: post.comments[i]),
+                            ),
+                    ),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                            child: TextField(
+                              controller: _commentController,
+                              decoration: const InputDecoration(
+                                hintText: 'Add a comment...',
+                              ),
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.send),
+                          onPressed: () {
+                            final text = _commentController.text.trim();
+                            if (text.isEmpty) return;
+                            post.addComment(
+                              CommentModel(username: 'me', text: text),
+                            );
+                            _commentController.clear();
+                            setSheetState(() {});
+                            setState(() {});
+                          },
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
         );
       },
     );
@@ -75,6 +142,7 @@ class _PostWidgetState extends State<PostWidget> {
                   openBottomSheet();
                 },
               ),
+              Text('${widget.post?.commentCount ?? 0}'),
               IconButton(
                 icon: const Icon(Icons.share),
                 onPressed: () {},
