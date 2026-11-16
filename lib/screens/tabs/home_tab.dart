@@ -1,44 +1,26 @@
-import "package:android_dev/screens/content/post_widget.dart";
-import "package:android_dev/screens/content/stories_bar.dart";
-import "package:android_dev/screens/home_screen/data/mock_posts.dart";
-import "package:android_dev/screens/home_screen/services/post_services.dart";
-import "package:flutter/material.dart";
+import 'package:android_dev/screens/content/post_widget.dart';
+import 'package:android_dev/screens/home_screen/state/feed_controller.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class HomeTab extends StatefulWidget {
+class HomeTab extends ConsumerWidget {
   const HomeTab({super.key});
 
   @override
-  State<HomeTab> createState() => _HomeTabState();
-}
-
-class _HomeTabState extends State<HomeTab> {
-  final PostServices postServices = PostServices();
-
-  @override
-  void initState() {
-    super.initState();
-    postServices.batchAddPosts(mockPosts);
-    postServices.batchAddStories(mockStories);
-  }
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final posts = ref.watch(feedControllerProvider);
     return Scaffold(
       backgroundColor: Colors.grey[200],
-      appBar: AppBar(
-        title: const Text('Instagram'),
-      ),
+      appBar: AppBar(title: const Text('Instagram')),
       body: ListView.builder(
-        itemCount: postServices.posts.length + 1,
-        itemBuilder: (context, index) {
-          if (index == 0) {
-            return StoriesBar(stories: postServices.stories);
-          }
-          return Padding(
-            padding: const EdgeInsets.all(4.0),
-            child: PostWidget(post: postServices.posts[index - 1]),
-          );
-        },
+        itemCount: posts.length,
+        itemBuilder: (context, index) => Padding(
+          padding: const EdgeInsets.all(4),
+          child: PostWidget(
+            post: posts[index],
+            onLike: () => ref.read(feedControllerProvider.notifier).toggleLike(posts[index].id),
+          ),
+        ),
       ),
     );
   }
