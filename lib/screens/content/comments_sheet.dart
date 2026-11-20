@@ -1,5 +1,6 @@
 import 'package:android_dev/screens/home_screen/services/local_data_service.dart';
 import 'package:android_dev/screens/home_screen/models/comment_model.dart';
+import 'package:android_dev/screens/home_screen/state/feed_controller.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -28,10 +29,7 @@ class _CommentsSheetState extends ConsumerState<CommentsSheet> {
   Future<void> _submit() async {
     final body = _controller.text.trim();
     if (body.isEmpty) return;
-    await ref.read(localDataServiceProvider).addComment(
-          postId: widget.postId,
-          body: body,
-        );
+    await ref.read(feedControllerProvider).addComment(postId: widget.postId, body: body);
     _controller.clear();
   }
 

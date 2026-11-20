@@ -34,7 +34,7 @@ class _NewPostTabState extends ConsumerState<NewPostTab> {
       _caption.clear();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Post saved to your device.')),
+          const SnackBar(content: Text('Post saved.')),
         );
       }
     } finally {

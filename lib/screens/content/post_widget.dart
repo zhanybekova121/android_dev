@@ -29,7 +29,15 @@ class PostWidget extends StatelessWidget {
           children: [
             Padding(
               padding: const EdgeInsets.all(8),
-              child: Text(post.authorName, style: const TextStyle(fontWeight: FontWeight.bold)),
+              child: Row(children: [
+                CircleAvatar(
+                  radius: 14,
+                  backgroundImage: post.authorAvatarUrl == null ? null : NetworkImage(post.authorAvatarUrl!),
+                  child: post.authorAvatarUrl == null ? Text(post.authorName[0].toUpperCase()) : null,
+                ),
+                const SizedBox(width: 8),
+                Text(post.authorName, style: const TextStyle(fontWeight: FontWeight.bold)),
+              ]),
             ),
             ClipRRect(
               borderRadius: BorderRadius.circular(8),
@@ -43,6 +51,7 @@ class PostWidget extends StatelessWidget {
               ),
               Text('${post.likeCount}'),
               IconButton(icon: const Icon(Icons.comment), onPressed: () => openBottomSheet(context)),
+              Text('${post.commentCount}'),
               IconButton(icon: const Icon(Icons.share), onPressed: () {}),
               const Spacer(),
               IconButton(icon: const Icon(Icons.bookmark_border), onPressed: () {}),

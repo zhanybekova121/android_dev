@@ -1,13 +1,7 @@
 import 'package:android_dev/screens/home_screen/state/feed_controller.dart';
-import 'package:android_dev/screens/home_screen/services/local_data_service.dart';
-import 'package:android_dev/core/db/app_database.dart';
-import 'package:drift/drift.dart' hide Column;
+import 'package:android_dev/core/auth/auth_service.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-final currentProfileProvider = StreamProvider<UserProfile?>(
-  (ref) => ref.watch(localDataServiceProvider).watchProfile('me'),
-);
 
 class ProfileTab extends ConsumerWidget {
   const ProfileTab({super.key});
@@ -15,9 +9,10 @@ class ProfileTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final posts = ref.watch(feedPostsProvider);
-    final profile = ref.watch(currentProfileProvider).asData?.value;
-    final nickname = profile?.nickname ?? 'alimhan';
-    final avatarUrl = profile?.avatarUrl;
+    final user = ref.watch(currentUserProvider).asData?.value;
+    if (user == null) return const SizedBox.shrink();
+    final nickname = user.username;
+    final avatarUrl = user.avatarUrl;
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -25,7 +20,12 @@ class ProfileTab extends ConsumerWidget {
         actions: [
           IconButton(
             icon: const Icon(Icons.edit_outlined),
-            onPressed: () => _showEditProfile(context, ref, nickname, avatarUrl),
+            onPressed: () => _showEditProfile(context, ref, user.id, nickname, avatarUrl),
+          ),
+          IconButton(
+            icon: const Icon(Icons.logout),
+            tooltip: 'Log out',
+            onPressed: () => _confirmLogout(context, ref),
           ),
         ],
       ),
@@ -34,7 +34,7 @@ class ProfileTab extends ConsumerWidget {
         error: (error, _) => Center(child: Text('Could not load profile: $error')),
         data: (allPosts) {
           final ownPosts =
-              allPosts.where((post) => post.authorId == 'me').toList();
+              allPosts.where((post) => post.authorId == user.id).toList();
           return CustomScrollView(slivers: [
             SliverToBoxAdapter(
               child: Padding(
@@ -58,6 +58,7 @@ class ProfileTab extends ConsumerWidget {
                         Text(nickname,
                             style: const TextStyle(
                                 fontSize: 20, fontWeight: FontWeight.bold)),
+                        Text(user.email, style: const TextStyle(color: Colors.grey)),
                         const SizedBox(height: 10),
                         Text('${ownPosts.length} posts'),
                       ],
@@ -94,6 +95,7 @@ class ProfileTab extends ConsumerWidget {
   Future<void> _showEditProfile(
     BuildContext context,
     WidgetRef ref,
+    String userId,
     String nickname,
     String? avatarUrl,
   ) async {
@@ -124,17 +126,18 @@ class ProfileTab extends ConsumerWidget {
           ),
           FilledButton(
             onPressed: () async {
-              final name = nameController.text.trim();
-              if (name.isEmpty) return;
-              final image = imageController.text.trim();
-              await ref.read(localDataServiceProvider).saveProfile(
-                    UserProfilesCompanion.insert(
-                      id: 'me',
-                      nickname: name,
-                      avatarUrl: Value(image.isEmpty ? null : image),
-                    ),
-                  );
-              if (dialogContext.mounted) Navigator.pop(dialogContext);
+              try {
+                await ref.read(authServiceProvider).updateProfile(
+                      userId: userId,
+                      username: nameController.text,
+                      avatarUrl: imageController.text.trim(),
+                    );
+                if (dialogContext.mounted) Navigator.pop(dialogContext);
+              } on AuthException catch (e) {
+                if (dialogContext.mounted) {
+                  ScaffoldMessenger.of(dialogContext).showSnackBar(SnackBar(content: Text(e.message)));
+                }
+              }
             },
             child: const Text('Save'),
           ),
@@ -143,5 +146,19 @@ class ProfileTab extends ConsumerWidget {
     );
     nameController.dispose();
     imageController.dispose();
+  }
+
+  Future<void> _confirmLogout(BuildContext context, WidgetRef ref) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Log out?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('Cancel')),
+          FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('Log out')),
+        ],
+      ),
+    );
+    if (confirmed == true) await ref.read(authServiceProvider).logout();
   }
 }
