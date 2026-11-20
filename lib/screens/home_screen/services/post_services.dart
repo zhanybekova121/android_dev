@@ -1,16 +1,11 @@
+import 'package:android_dev/screens/home_screen/data/mock_posts.dart';
 import 'package:android_dev/screens/home_screen/models/post_model.dart';
+import 'package:android_dev/screens/home_screen/models/story_model.dart';
 
-class PostServices{
+class PostServices {
+  const PostServices();
 
-  final List<PostModel> posts = [];
+  List<PostModel> fetchPosts() => List.of(mockPosts);
 
-  PostServices();
-
-  void addPost(PostModel post) {
-    posts.add(post);
-  }
-
-  void batchAddPosts(List<PostModel> newPosts) {
-    posts.addAll(newPosts);
-  }
+  List<StoryModel> fetchStories() => List.of(mockStories);
 }

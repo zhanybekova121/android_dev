@@ -5,8 +5,8 @@ import 'package:android_dev/screens/home_screen/models/story_model.dart';
 final List<PostModel> mockPosts = [
   PostModel(
     id: 'post-1',
-    authorId: 'user_0',
-    authorName: 'user_0',
+    authorId: 'me',
+    authorName: 'alimhan',
     imageUrl: 'https://picsum.photos/id/10/600/600',
     description: 'Morning walk in the forest 🌲',
     likeCount: 12,
@@ -17,8 +17,8 @@ final List<PostModel> mockPosts = [
   ),
   PostModel(
     id: 'post-2',
-    authorId: 'user_1',
-    authorName: 'user_1',
+    authorId: 'me',
+    authorName: 'alimhan',
     imageUrl: 'https://picsum.photos/id/20/600/600',
     description: 'My new workspace setup',
     likeCount: 34,

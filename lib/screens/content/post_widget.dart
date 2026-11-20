@@ -1,5 +1,9 @@
+import 'package:android_dev/screens/content/comment_widget.dart';
+import 'package:android_dev/screens/home_screen/models/comment_model.dart';
 import 'package:android_dev/screens/home_screen/models/post_model.dart';
+import 'package:android_dev/screens/home_screen/state/feed_controller.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class PostWidget extends StatelessWidget {
   final PostModel post;
@@ -10,10 +14,8 @@ class PostWidget extends StatelessWidget {
   void openBottomSheet(BuildContext context) {
     showModalBottomSheet<void>(
       context: context,
-      builder: (context) => const SizedBox(
-        height: 200,
-        child: Center(child: Text('Comments')),
-      ),
+      isScrollControlled: true,
+      builder: (_) => CommentsSheet(postId: post.id),
     );
   }
 
@@ -44,6 +46,7 @@ class PostWidget extends StatelessWidget {
               ),
               Text('${post.likeCount}'),
               IconButton(icon: const Icon(Icons.comment), onPressed: () => openBottomSheet(context)),
+              Text('${post.commentCount}'),
               IconButton(icon: const Icon(Icons.share), onPressed: () {}),
               const Spacer(),
               IconButton(icon: const Icon(Icons.bookmark_border), onPressed: () {}),
@@ -52,4 +55,70 @@ class PostWidget extends StatelessWidget {
           ],
         ),
       );
+}
+
+class CommentsSheet extends ConsumerStatefulWidget {
+  final String postId;
+  const CommentsSheet({super.key, required this.postId});
+
+  @override
+  ConsumerState<CommentsSheet> createState() => _CommentsSheetState();
+}
+
+class _CommentsSheetState extends ConsumerState<CommentsSheet> {
+  final _controller = TextEditingController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _send() {
+    final text = _controller.text.trim();
+    if (text.isEmpty) return;
+    ref.read(feedControllerProvider.notifier).addComment(
+          widget.postId,
+          CommentModel(username: 'me', text: text),
+        );
+    _controller.clear();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final comments = ref.watch(postProvider(widget.postId)).comments;
+    return Padding(
+      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      child: SizedBox(
+        height: 400,
+        child: Column(children: [
+          const Padding(
+            padding: EdgeInsets.all(12),
+            child: Text('Comments', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+          Expanded(
+            child: comments.isEmpty
+                ? const Center(child: Text('No comments yet'))
+                : ListView.builder(
+                    itemCount: comments.length,
+                    itemBuilder: (_, i) => CommentWidget(comment: comments[i]),
+                  ),
+          ),
+          Row(children: [
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: TextField(
+                  controller: _controller,
+                  decoration: const InputDecoration(hintText: 'Add a comment...'),
+                  onSubmitted: (_) => _send(),
+                ),
+              ),
+            ),
+            IconButton(icon: const Icon(Icons.send), onPressed: _send),
+          ]),
+        ]),
+      ),
+    );
+  }
 }
