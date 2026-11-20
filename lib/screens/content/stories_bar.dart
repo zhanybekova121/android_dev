@@ -1,6 +1,6 @@
 import 'package:android_dev/screens/content/story_widget.dart';
 import 'package:android_dev/screens/home_screen/models/story_model.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 class StoriesBar extends StatelessWidget {
   final List<StoryModel> stories;

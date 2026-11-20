@@ -1,11 +1,13 @@
 class CommentModel {
-  final String username;
-  final String text;
-  final String? avatarUrl;
-
-  CommentModel({
-    required this.username,
-    required this.text,
-    this.avatarUrl
+  const CommentModel({
+    required this.id,
+    required this.authorName,
+    required this.body,
+    required this.createdAt,
   });
+
+  final String id;
+  final String authorName;
+  final String body;
+  final DateTime createdAt;
 }

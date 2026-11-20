@@ -1,36 +1,50 @@
-import 'package:android_dev/screens/home_screen/models/comment_model.dart';
-import 'package:android_dev/screens/home_screen/models/post_model.dart';
-import 'package:android_dev/screens/home_screen/models/story_model.dart';
-import 'package:android_dev/screens/home_screen/state/services_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:android_dev/core/db/app_database.dart';
+import '../services/local_data_service.dart';
+import '../models/post_model.dart';
 
-class FeedController extends Notifier<List<PostModel>> {
-  @override
-  List<PostModel> build() => ref.watch(postServicesProvider).fetchPosts();
-
-  void toggleLike(String id) => _update(
-        id,
-        (post) => post.copyWith(
-          isLiked: !post.isLiked,
-          likeCount: post.likeCount + (post.isLiked ? -1 : 1),
-        ),
+extension CachedPostMapper on CachedPost {
+  PostModel toModel() => PostModel(
+        id: id,
+        imageUrl: imageUrl,
+        description: caption,
+        authorId: authorId,
+        authorName: authorName,
+        likeCount: likes,
+        isLiked: isLiked,
       );
+}
 
-  void addComment(String postId, CommentModel comment) =>
-      _update(postId, (post) => post.copyWith(comments: [...post.comments, comment]));
+final feedPostsProvider = StreamProvider<List<PostModel>>((ref) {
+  return ref.watch(localDataServiceProvider).watchPosts().map(
+        (posts) => posts.map((post) => post.toModel()).toList(),
+      );
+});
 
-  void _update(String id, PostModel Function(PostModel) change) {
-    state = [for (final post in state) post.id == id ? change(post) : post];
+class FeedController {
+  FeedController(this._localData);
+
+  final LocalDataService _localData;
+
+  Future<void> toggleLike(String id) async {
+    final post = await _localData.getPost(id);
+    if (post != null) await _localData.toggleLike(post);
+  }
+
+  Future<void> createPost({required String imageUrl, required String caption}) {
+    final now = DateTime.now().microsecondsSinceEpoch;
+    return _localData.savePost(
+      CachedPostsCompanion.insert(
+        id: 'post-$now',
+        authorId: 'me',
+        authorName: 'alimhan',
+        imageUrl: imageUrl,
+        caption: caption,
+      ),
+    );
   }
 }
 
-final feedControllerProvider =
-    NotifierProvider<FeedController, List<PostModel>>(FeedController.new);
-
-final storiesProvider = Provider<List<StoryModel>>(
-  (ref) => ref.watch(postServicesProvider).fetchStories(),
-);
-
-final postProvider = Provider.family<PostModel, String>(
-  (ref, id) => ref.watch(feedControllerProvider.select((posts) => posts.firstWhere((p) => p.id == id))),
+final feedControllerProvider = Provider<FeedController>(
+  (ref) => FeedController(ref.watch(localDataServiceProvider)),
 );
